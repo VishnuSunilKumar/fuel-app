@@ -1,0 +1,102 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e0f11"><link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png"><title>Fuel</title>
+<style>
+:root{--bg:#0e0f11;--card:#17191c;--line:#262a2e;--tx:#e8eaed;--mut:#8a9099;--ac:#5be3a0;--warn:#ffb86b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px system-ui,sans-serif;padding-bottom:80px}
+main{max-width:520px;margin:0 auto;padding:16px}
+h2{font-size:13px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin:22px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mut{color:var(--mut);font-size:13px}.big{font-size:34px;font-weight:700}
+button,.btn{background:var(--ac);color:#06130c;border:0;border-radius:12px;padding:11px 16px;font:600 14px system-ui;cursor:pointer}
+button.g{background:#22262a;color:var(--tx)}button.sm{padding:6px 12px;font-size:13px}
+input,select,textarea{width:100%;background:#0e0f11;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:11px;font:15px system-ui;margin-top:4px}
+label{font-size:12px;color:var(--mut);display:block;margin-top:10px}
+.bar{height:6px;background:#22262a;border-radius:3px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--ac)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#121417;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav a{flex:1;text-align:center;padding:14px 0;color:var(--mut);font-weight:600;font-size:13px}nav a.on{color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.d{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;background:var(--card)}
+.d small{font-size:9px;color:var(--mut)}.d.t{border:1px solid var(--ac)}.d.l{background:#1c2a24}.d.s{background:var(--ac);color:#06130c}.d.s small{color:#06130c}
+.meal img{width:44px;height:44px;border-radius:10px;object-fit:cover}
+.sheet{position:fixed;inset:0;background:#000a;display:flex;align-items:flex-end;z-index:9}
+.sheet>div{background:var(--card);width:100%;max-width:520px;margin:0 auto;border-radius:20px 20px 0 0;padding:18px;max-height:92vh;overflow:auto}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+</style></head><body><main id="app"></main>
+<nav><a data-v="today">Today</a><a data-v="cal">Calendar</a><a data-v="me">Profile</a></nav>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let db;try{db=JSON.parse(localStorage.fuel)}catch(e){}
+db=db||{profile:{sex:'m',age:25,h:170,w:70,goal:0},days:{},cfg:{key:'',model:'gemini-2.5-flash'}};
+const save=()=>{try{localStorage.fuel=JSON.stringify(db)}catch(e){alert('Storage full — export a backup.')}};
+const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+let view='today',cur=key(new Date()),cm=new Date();cm.setDate(1);
+const day=k=>db.days[k]||(db.days[k]={meals:[],burn:{kcal:0,steps:0}});
+const MEALS=['Breakfast','Lunch','Snack','Dinner'];
+function calc(){const p=db.profile,bmr=10*p.w+6.25*p.h-5*p.age+(p.sex=='m'?5:-161),base=bmr*1.2,t=Math.round(base+(+p.goal));
+ const fat=Math.round(t*.25/9),pro=Math.round(1.6*p.w);return{bmr:Math.round(bmr),t,pro,fat,carb:Math.max(0,Math.round((t-pro*4-fat*9)/4))}}
+const sum=d=>d.meals.reduce((a,m)=>({k:a.k+m.kcal,p:a.p+m.p,c:a.c+m.c,f:a.f+m.f}),{k:0,p:0,c:0,f:0});
+const pct=(a,b)=>Math.min(100,b?a/b*100:0);
+function render(){document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v==view));
+ $('#app').innerHTML=view=='today'?today():view=='cal'?cal():me();scrollTo(0,0)}
+function today(){const d=day(cur),s=sum(d),c=calc(),left=c.t-s.k+(+d.burn.kcal||0),dt=new Date(cur+'T12:00');
+ const mac=(n,v,t)=>`<div><div class="mut">${n}</div><b>${Math.round(v)}</b><span class="mut">/${t}g</span><div class="bar"><i style="width:${pct(v,t)}%"></i></div></div>`;
+ return `<div class="row"><button class="g sm" onclick="shift(-1)">‹</button><b>${cur==key(new Date())?'Today':dt.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short',year:'numeric'})}</b><button class="g sm" onclick="shift(1)">›</button></div>
+<div class="card" style="margin-top:14px"><div class="mut">Remaining</div><div class="big" style="color:${left<0?'var(--warn)':'var(--ac)'}">${Math.round(left)} <span class="mut">kcal</span></div>
+<div class="mut">Goal ${c.t} − eaten ${Math.round(s.k)} + burned ${Math.round(d.burn.kcal||0)}</div><div class="bar"><i style="width:${pct(s.k,c.t+(+d.burn.kcal||0))}%"></i></div>
+<div class="cols" style="grid-template-columns:repeat(3,1fr);margin-top:14px">${mac('Protein',s.p,c.pro)}${mac('Carbs',s.c,c.carb)}${mac('Fat',s.f,c.fat)}</div></div>
+${MEALS.map(t=>{const ms=d.meals.filter(m=>m.type==t);return `<h2 class="row"><span>${t} · ${Math.round(ms.reduce((a,m)=>a+m.kcal,0))} kcal</span><button class="sm" onclick="addMeal('${t}')">+ Add</button></h2>
+${ms.map(m=>`<div class="card meal row" onclick="editMeal('${m.id}')"><div class="row" style="gap:10px">${m.img?`<img src="${m.img}">`:''}<div><div>${esc(m.name)}</div><div class="mut">P ${m.p} · C ${m.c} · F ${m.f}</div></div></div><b>${m.kcal}</b></div>`).join('')}`}).join('')}
+<h2>Activity (from watch)</h2><div class="card"><div class="cols" style="grid-template-columns:1fr 1fr"><div><label>Active kcal burned</label><input type="number" inputmode="numeric" value="${d.burn.kcal||''}" onchange="burn('kcal',this.value)"></div><div><label>Steps</label><input type="number" inputmode="numeric" value="${d.burn.steps||''}" onchange="burn('steps',this.value)"></div></div></div>`}
+function burn(k,v){day(cur).burn[k]=+v||0;save();render()}
+function shift(n){const d=new Date(cur+'T12:00');d.setDate(d.getDate()+n);cur=key(d);render()}
+function cal(){const y=cm.getFullYear(),m=cm.getMonth(),first=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate(),c=calc();let h='';
+ for(let i=0;i<first;i++)h+='<div></div>';
+ for(let i=1;i<=n;i++){const k=key(new Date(y,m,i)),d=db.days[k],kc=d?Math.round(sum(d).k):0;
+  h+=`<div class="d ${k==key(new Date())?'t':''} ${kc?'l':''} ${k==cur?'s':''}" onclick="cur='${k}';view='today';render()">${i}<small>${kc||''}</small></div>`}
+ return `<div class="row"><button class="g sm" onclick="cm.setMonth(cm.getMonth()-1);render()">‹</button><b>${cm.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</b><button class="g sm" onclick="cm.setMonth(cm.getMonth()+1);render()">›</button></div>
+<div class="grid mut" style="margin:14px 0 6px">${'MTWTFSS'.split('').map(x=>`<div>${x}</div>`).join('')}</div><div class="grid">${h}</div><p class="mut">Numbers are kcal eaten. Goal: ${c.t} kcal.</p>`}
+function me(){const p=db.profile,c=calc(),f=(l,k,t='number')=>`<label>${l}</label><input type="${t}" inputmode="decimal" value="${p[k]}" onchange="db.profile.${k}=+this.value;save();render()">`;
+ return `<h2>Body</h2><div class="card"><label>Sex</label><select onchange="db.profile.sex=this.value;save();render()"><option value="m" ${p.sex=='m'?'selected':''}>Male</option><option value="f" ${p.sex=='f'?'selected':''}>Female</option></select>
+${f('Age','age')}${f('Height (cm)','h')}${f('Weight (kg)','w')}<label>Goal</label><select onchange="db.profile.goal=+this.value;save();render()">${[[-500,'Lose weight (−500)'],[0,'Maintain'],[300,'Gain (+300)']].map(o=>`<option value="${o[0]}" ${p.goal==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
+<div class="card"><div class="mut">Daily target</div><div class="big">${c.t} <span class="mut">kcal</span></div><div class="mut">BMR ${c.bmr} · Protein ${c.pro}g · Carbs ${c.carb}g · Fat ${c.fat}g<br>Base = BMR × 1.2; logged burned calories are added on top.</div></div>
+<h2>Gemini</h2><div class="card"><label>API key (stored only on this device)</label><input type="password" value="${esc(db.cfg.key)}" onchange="db.cfg.key=this.value.trim();save()"><label>Model</label><input value="${esc(db.cfg.model)}" onchange="db.cfg.model=this.value.trim();save()"></div>
+<h2>Data</h2><div class="card row"><button class="g" onclick="exp()">Export backup</button><label class="btn g" style="margin:0;color:var(--tx)">Import<input type="file" accept=".json" hidden onchange="imp(this.files[0])"></label></div>`}
+function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:'application/json'}));a.download='fuel-backup-'+cur+'.json';a.click()}
+function imp(f){if(!f)return;f.text().then(t=>{try{db=JSON.parse(t);save();render()}catch(e){alert('Invalid file')}})}
+let draft;
+function addMeal(t){draft={id:'m'+Date.now(),type:t,name:'',kcal:0,p:0,c:0,f:0,img:'',note:'',_new:1};sheet()}
+function editMeal(id){draft={...day(cur).meals.find(m=>m.id==id)};sheet()}
+function sheet(){const d=draft,n=(l,k)=>`<div><label>${l}</label><input type="number" inputmode="decimal" id="f_${k}" value="${d[k]}"></div>`;
+ const el=document.createElement('div');el.className='sheet';el.id='sh';el.innerHTML=`<div><div class="row"><b>${d.type}</b><button class="g sm" onclick="closeSheet()">Close</button></div>
+<label>Photo (optional)</label><input type="file" accept="image/*" id="photo" onchange="pick(this.files[0])"><div id="prev">${d.img?`<img src="${d.img}" style="width:100%;border-radius:12px;margin-top:8px">`:''}</div>
+<label>Description (optional, e.g. "2 rotis, dal, 150g chicken curry")</label><textarea id="note" rows="2">${esc(d.note)}</textarea>
+<button style="width:100%;margin-top:12px" onclick="analyze()" id="ab">Analyze with Gemini</button><div class="mut" id="msg" style="margin-top:6px"></div>
+<label>Name</label><input id="f_name" value="${esc(d.name)}"><div class="cols">${n('kcal','kcal')}${n('Protein','p')}${n('Carbs','c')}${n('Fat','f')}</div>
+<div class="row" style="margin-top:14px"><button onclick="saveMeal()" style="flex:1">Save</button>${d._new?'':`<button class="g" onclick="delMeal()">Delete</button>`}</div></div>`;document.body.appendChild(el)}
+function closeSheet(){$('#sh')?.remove()}
+function pick(f){if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+ const sc=(w)=>{const s=Math.min(1,w/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.8)};
+ draft.big=sc(1024);draft.img=sc(240);$('#prev').innerHTML=`<img src="${draft.img}" style="width:100%;border-radius:12px;margin-top:8px">`};im.src=r.result};r.readAsDataURL(f)}
+async function analyze(){const note=$('#note').value.trim();draft.note=note;const m=$('#msg');
+ if(!db.cfg.key)return m.textContent='Add your Gemini API key in Profile first.';
+ if(!draft.big&&!note)return m.textContent='Add a photo or a description.';
+ $('#ab').disabled=true;m.textContent='Analyzing…';
+ const parts=[{text:'You are a nutrition expert. Estimate the nutrition of this meal'+(note?` using this description: "${note}"`:'')+'. Estimate for the full portion shown/described. Return JSON: {"name":string,"kcal":number,"protein":number,"carbs":number,"fat":number}. Grams for macros.'}];
+ if(draft.big)parts.push({inline_data:{mime_type:'image/jpeg',data:draft.big.split(',')[1]}});
+ try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${db.cfg.model}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':db.cfg.key},body:JSON.stringify({contents:[{parts}],generationConfig:{responseMimeType:'application/json'}})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+  const o=JSON.parse(j.candidates[0].content.parts.map(p=>p.text||'').join('').replace(/```json|```/g,''));
+  $('#f_name').value=o.name||'';$('#f_kcal').value=Math.round(o.kcal);$('#f_p').value=Math.round(o.protein);$('#f_c').value=Math.round(o.carbs);$('#f_f').value=Math.round(o.fat);m.textContent='Estimate filled in — adjust if needed.'}
+ catch(e){m.textContent='Failed: '+e.message}$('#ab').disabled=false}
+function saveMeal(){const d=draft,g=k=>+$('#f_'+k).value||0;
+ const o={id:d.id,type:d.type,name:$('#f_name').value.trim()||'Meal',kcal:g('kcal'),p:g('p'),c:g('c'),f:g('f'),img:d.img,note:$('#note').value.trim()};
+ const ms=day(cur).meals,i=ms.findIndex(m=>m.id==o.id);i<0?ms.push(o):ms[i]=o;save();closeSheet();render()}
+function delMeal(){const d=day(cur);d.meals=d.meals.filter(m=>m.id!=draft.id);save();closeSheet();render()}
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>{view=a.dataset.v;render()});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+render();
+</script></body></html>
