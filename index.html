@@ -51,7 +51,7 @@ nav a.on{background:var(--lav);color:var(--ink)}nav svg{width:24px;height:24px;f
 .xc input{padding:8px;font-size:14px;margin-top:2px}.xc label{margin-top:8px;font-size:11px}
 .bar{height:8px;background:#2e2e31;border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--lime)}
 </style></head><body><main id="app"></main><div id="fabw"></div>
-<script>addEventListener('error',function(e){var a=document.getElementById('app');if(a)a.innerHTML='<div style="padding:20px;color:#ff9a9a;white-space:pre-wrap;font:14px monospace">Fuel could not start:\n'+e.message+(e.lineno?' (line '+e.lineno+')':'')+'</div>'});setTimeout(function(){if(!window.fuelLoaded){var a=document.getElementById('app');if(a&&!a.innerHTML)a.innerHTML='<div style="padding:20px;color:#ff9a9a;white-space:pre-wrap;font:14px monospace">Fuel did not load fully. The index.html file on GitHub looks incomplete - upload it again.</div>'}},2500)</script>
+<script>addEventListener('error',function(e){var a=document.getElementById('app');if(a)a.innerHTML='<div style="padding:20px;color:#ff9a9a;white-space:pre-wrap;font:14px monospace">Fuel could not start:\n'+e.message+(e.lineno?' (line '+e.lineno+')':'')+'</div>'});setTimeout(function(){if(!window.fuelLoaded){var a=document.getElementById('app');if(a&&!a.innerHTML)a.innerHTML='<div style="padding:20px;color:#ff9a9a;font:14px monospace">Fuel did not load fully. The index.html file on GitHub looks incomplete - upload it again.</div>'}},2500)</script>
 <nav id="nav"></nav>
 <script>
 const I={cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>',drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',plate:'<path d="M7 3v7a2 2 0 0 0 4 0V3M9 3v18M17 3c-2.5 2-3 5-3 8h3v10"/>',spark:'<path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 15-5 16 0"/>',target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',bell:'<path d="M6 17v-6a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/>',bot:'<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13v2M15 13v2"/>',disk:'<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>',check:'<path d="M5 12l5 5 9-10"/>',chev:'<path d="M9 6l6 6-6 6"/>',dumb:'<path d="M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12"/>',moon:'<path d="M20 14A8 8 0 0 1 10 4a8 8 0 1 0 10 10z"/>'};
@@ -59,7 +59,7 @@ const ic=(n,st='')=>`<svg class="ic" viewBox="0 0 24 24" style="${st}">${I[n]}</
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let db;try{db=JSON.parse(localStorage.fuel)}catch(e){}
 db=db||{};db.profile=Object.assign({sex:'m',age:25,h:170,w:70,goal:0,goalW:0,bday:'',bf:'',waterGoal:0},db.profile);db.days=db.days||{};db.weights=db.weights||{};
-db.cfg=Object.assign({prov:'gemini',key:'',base:'https://api.openai.com/v1',model:'gemini-3.5-flash',fb:true,fbk:'cloud',model2:'gemini-3.5-flash-lite',maxTok:2048,pipe:true,vBase:'',vModel:'',vKey:'',insight:'device',mUrl:'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.task'},db.cfg);
+db.cfg=Object.assign({prov:'gemini',key:'',base:'https://api.openai.com/v1',model:'gemini-3.5-flash',fb:true,fbk:'cloud',model2:'gemini-3.5-flash-lite',maxTok:2048,pipe:true,vMode:'cloud',vBase:'',vModel:'',vKey:'',vUrl:'https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task',vOk:0,insight:'device',mUrl:'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-web.task'},db.cfg);
 db.notif=Object.assign({on:false,every:90,from:8,to:22,cup:250},db.notif);
 const save=()=>{try{localStorage.fuel=JSON.stringify(db)}catch(e){alert('Storage full — export a backup.')}};
 const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),D=k=>new Date(k+'T12:00');
@@ -117,7 +117,8 @@ setInterval(tick,60000);document.addEventListener('visibilitychange',()=>{if(!do
 /* AI */
 const toB=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
 async function callOne(a,parts,json){const c=db.cfg,mt=+c.maxTok||2048,txt=parts.filter(x=>x.text).map(x=>x.text).join('\n'),img=(parts.find(x=>x.img)||{}).img;
- if(a.k=='device')return device(txt);const K=a.key||c.key,B=a.base||c.base;if(!K)throw Error('Add your API key in Settings → AI');
+ if(a.k=='device')return device(txt);if(a.k=='gemma3n')return deviceVision(txt,img);
+ const K=a.key||c.key,B=a.base||c.base;if(!K)throw Error('Add your API key in Settings → AI');
  if(a.k=='openai'){const content=[{type:'text',text:txt}];if(img)content.push({type:'image_url',image_url:{url:img}});
   const r=await fetch(B.replace(/\/$/,'')+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+K},body:JSON.stringify({model:a.m,messages:[{role:'user',content}],max_tokens:mt})});const j=await r.json();
   if(!r.ok){const e=Error(j.error?.message||r.status);e.st=r.status;throw e}return j.choices[0].message.content}
@@ -126,16 +127,23 @@ async function callOne(a,parts,json){const c=db.cfg,mt=+c.maxTok||2048,txt=parts
  const j=await r.json();if(!r.ok){const e=Error(j.error?.message||r.status);e.st=r.status;throw e}return j.candidates[0].content.parts.map(p=>p.text||'').join('')}
 async function ai(parts,json,first){const c=db.cfg,list=c.prov=='device'?[{k:'device'}]:[{k:c.prov,m:c.model}];
  if(c.fb)list.push(c.fbk=='device'||c.prov=='device'?(c.prov=='device'?{k:'gemini',m:c.model2}:{k:'device'}):{k:c.prov,m:c.model2});if(first)list.unshift(first);let err;
- for(const a of list){for(let i=0;i<(a.k=='device'?1:3);i++){try{return await callOne(a,parts,json)}catch(e){err=e;if(![429,500,503].includes(e.st))break;await new Promise(s=>setTimeout(s,1200*(i+1)))}}}throw err}
-let llm,mp=0;
-async function device(prompt){if(!llm){const c=await caches.open('fuel-model'),r=await c.match(db.cfg.mUrl);if(!r)throw Error('Download Gemma first (Settings → AI)');
- const {FilesetResolver,LlmInference}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/+esm');const fs=await FilesetResolver.forGenAiTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/wasm');
- llm=await LlmInference.createFromOptions(fs,{baseOptions:{modelAssetBuffer:r.body.getReader()},maxTokens:(+db.cfg.maxTok||1024)+1024,topK:40,temperature:.7})}
+ for(const a of list){for(let i=0;i<(a.k=='device'||a.k=='gemma3n'?1:3);i++){try{return await callOne(a,parts,json)}catch(e){err=e;if(![429,500,503].includes(e.st))break;await new Promise(s=>setTimeout(s,1200*(i+1)))}}}throw err}
+let llm,mp=0,vllm,vp=0;
+async function initMp(cacheName,url,slot){const c=await caches.open(cacheName),r=await c.match(url);if(!r)throw Error('Download model first (Settings → AI)');
+ const {FilesetResolver,LlmInference}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/+esm');
+ const fs=await FilesetResolver.forGenAiTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai/wasm');
+ return await LlmInference.createFromOptions(fs,{baseOptions:{modelAssetBuffer:r.body.getReader()},maxTokens:(+db.cfg.maxTok||1024)+1024,maxNumImages:slot=='vision'?1:0,topK:40,temperature:.7})}
+async function device(prompt){if(!llm)llm=await initMp('fuel-model',db.cfg.mUrl,'text');
  return await llm.generateResponse(`<start_of_turn>user\n${prompt}<end_of_turn>\n<start_of_turn>model\n`)}
-async function dlModel(){const u=db.cfg.mUrl;try{navigator.storage?.persist?.();const c=await caches.open('fuel-model'),r=await fetch(u);if(!r.ok)throw Error('HTTP '+r.status);const tot=+r.headers.get('content-length')||2.1e9;let got=0;
- const ts=new TransformStream({transform(ch,ctl){got+=ch.length;mp=Math.round(got/tot*100);const e=$('#mp');if(e)e.textContent='Downloading · '+mp+'%';ctl.enqueue(ch)}});
- await c.put(u,new Response(r.body.pipeThrough(ts),{headers:{'content-type':'application/octet-stream'}}));db.cfg.mOk=1;save();render()}catch(e){alert('Download failed: '+e.message);const e2=$('#mp');if(e2)e2.textContent='Not downloaded'}}
-async function delModel(){await caches.delete('fuel-model');llm=null;db.cfg.mOk=0;save();render()}
+async function deviceVision(prompt,img){if(!vllm)vllm=await initMp('fuel-vision-model',db.cfg.vUrl,'vision');
+ const p=img?[{text:prompt},{imageSource:img}]:prompt;return await vllm.generateResponse(p)}
+async function dlAsset(url,cacheName,okKey,progId,setP){try{navigator.storage?.persist?.();const c=await caches.open(cacheName),r=await fetch(url);if(!r.ok)throw Error('HTTP '+r.status);const tot=+r.headers.get('content-length')||2.1e9;let got=0;
+ const ts=new TransformStream({transform(ch,ctl){got+=ch.length;const pctV=Math.round(got/tot*100);setP(pctV);const e=$(progId);if(e)e.textContent='Downloading · '+pctV+'%';ctl.enqueue(ch)}});
+ await c.put(url,new Response(r.body.pipeThrough(ts),{headers:{'content-type':'application/octet-stream'}}));db.cfg[okKey]=1;save();keep=1;render()}catch(e){alert('Download failed: '+e.message);const e2=$(progId);if(e2)e2.textContent='Not downloaded'}}
+function dlModel(){return dlAsset(db.cfg.mUrl,'fuel-model','mOk','#mp',v=>mp=v)}
+async function delModel(){await caches.delete('fuel-model');llm=null;db.cfg.mOk=0;save();keep=1;render()}
+function dlVisModel(){return dlAsset(db.cfg.vUrl,'fuel-vision-model','vOk','#vp',v=>vp=v)}
+async function delVisModel(){await caches.delete('fuel-vision-model');vllm=null;db.cfg.vOk=0;save();keep=1;render()}
 /* FOOD IMAGES */
 const IMC={};
 async function wimg(q){const j=await(await fetch(`https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=240&format=json&origin=*`)).json();
@@ -211,7 +219,7 @@ water|0,0,0,0,0,0
 protein shake|120,24,3,1.5,0,2`.split('\n').map(l=>{const[a,b]=l.split('|');return{k:a.split('/'),v:b.split(',').map(Number)}});
 function lookup(n){n=n.toLowerCase();const ns=n.replace(/s\b/g,'');let best,bl=0;for(const f of FD)for(const k of f.k)if((n.includes(k)||ns.includes(k)||k.includes(n))&&k.length>bl){best=f;bl=k.length}return best?best.v:null}
 async function offLookup(q){try{const j=await(await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=3&fields=nutriments`)).json();const n=(j.products||[]).map(p=>p.nutriments||{}).find(n=>n['energy-kcal_100g']>0);return n?[n['energy-kcal_100g'],n.proteins_100g||0,n.carbohydrates_100g||0,n.fat_100g||0,n.fiber_100g||0,n.sugars_100g||0]:null}catch(e){return null}}
-const visAgent=()=>db.cfg.vModel?{k:'openai',m:db.cfg.vModel,base:db.cfg.vBase,key:db.cfg.vKey}:null;
+const visAgent=()=>db.cfg.vMode=='gemma3n'?{k:'gemma3n'}:db.cfg.vModel?{k:'openai',m:db.cfg.vModel,base:db.cfg.vBase,key:db.cfg.vKey}:null;
 async function pipeline(note,m){const vf=visAgent(),parts=[{text:`You are the Food Vision agent. Identify every food and drink item${note?` (user description: "${note}")`:''}. Estimate each item's portion in grams (ml for drinks) and your confidence from 0 to 1. Reply with ONLY JSON: {"name":"short meal name","food_term":"one generic food name","items":[{"name":"generic food name, e.g. chicken shawarma","grams":number,"confidence":number,"ingredients":[string],"est":{"kcal":number,"protein":number,"carbs":number,"fat":number,"fiber":number,"sugar":number}}]}. est covers the whole portion of that item.`}];
  if(dr.big&&(vf||db.cfg.prov!='device'))parts.push({img:dr.big});const o=JSON.parse((await ai(parts,1,vf)).match(/\{[\s\S]*\}/)[0]);m.textContent='Agent 2: matching nutrition database…';
  const T={k:0,p:0,c:0,f:0,fi:0,su:0},rep=[];
@@ -321,9 +329,14 @@ ${cf.prov!='device'?`${cf.prov=='openai'?inp('Base URL','cfg','base','text'):''}
 ${inp('Max response tokens','cfg','maxTok')}</div>
 <div class="card"><b style="font-weight:400;color:var(--lime)">FALLBACK</b>${chk('Enable fallback if primary is busy or fails','cfg','fb')}${cf.fb?`${sel('Fallback to','cfg','fbk',[['cloud','A second cloud model'],['device','On-device Gemma']])}${cf.fbk!='device'?inp('Fallback model','cfg','model2','text'):''}`:''}</div>
 <div class="card"><b style="font-weight:400;color:var(--lime)">AI AGENTS</b>${chk('Use 3-agent pipeline for meal analysis','cfg','pipe')}
-<div class="mut" style="margin-top:12px">Agent 1 · Food Vision — any OpenAI-compatible vision model, e.g. a Qwen VL model through OpenRouter. Leave blank to use the primary AI.</div>${inp('Vision base URL','cfg','vBase','text','https://openrouter.ai/api/v1')}${inp('Vision model','cfg','vModel','text')}<label>Vision API key</label><input type="password" value="${esc(cf.vKey)}" onchange="db.cfg.vKey=this.value.trim();save()">
+<div class="mut" style="margin-top:12px">Agent 1 · Food Vision — download Gemma 3n locally for on-device image recognition, or use any OpenAI-compatible vision model (e.g. Qwen VL via OpenRouter). Leave blank to use the primary AI.</div>
+${sel('Vision source','cfg','vMode',[['cloud','Cloud / Primary AI'],['gemma3n','On-device Gemma 3n (local download)']])}
+${cf.vMode=='gemma3n'?`<div style="margin-top:12px">Gemma 3n E2B int4 <span class="mut">· vision + text</span></div><div class="mut" id="vp" style="margin:6px 0">${cf.vOk?ic('check')+' Downloaded':'Not downloaded'}</div>
+${cf.vOk?`<button class="g sm" onclick="delVisModel()">Delete Gemma 3n</button>`:`<button class="sm" onclick="dlVisModel()">Download Gemma 3n (Wi-Fi!)</button>`}
+${inp('Gemma 3n model file URL','cfg','vUrl','text')}`:
+`${inp('Vision base URL','cfg','vBase','text','https://openrouter.ai/api/v1')}${inp('Vision model','cfg','vModel','text')}<label>Vision API key</label><input type="password" value="${esc(cf.vKey)}" onchange="db.cfg.vKey=this.value.trim();save()">`}
 <div class="mut" style="margin-top:14px">Agent 2 · Nutrition Calculator — built-in food database, then Open Food Facts, then the vision agent's own estimate. No setup.</div>${sel('Agent 3 · Insights (Coach → Daily insights)','cfg','insight',[['device','On-device Gemma (falls back to primary)'],['primary','Primary AI']])}</div>
-<p class="mut">On-device Gemma runs offline and ignores photos (text only). It needs a recent Chrome with WebGPU, and I could not test it on a phone — if it fails, the cloud model still works.</p>`;
+<p class="mut">On-device Gemma runs offline. Gemma 4 is text-only; Gemma 3n supports image input in MediaPipe GenAI but may require Hugging Face access and sufficient device WebGPU memory.</p>`;
  return `${back}<h1 style="margin-top:14px">Data Management</h1><div class="card row"><button class="g" onclick="exp()">Export backup</button><label style="margin:0"><span class="g" style="display:inline-block;padding:12px 18px;border-radius:999px;background:#2e2e31;color:var(--tx);font-weight:600;font-size:14px">Import</span><input type="file" accept=".json" hidden onchange="imp(this.files[0])"></label></div><p class="mut">Huawei Health can't be read from a web app, so enter steps and active calories under Activity.</p>`}
 function exp(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:'application/json'}));a.download='fuel-backup-'+key(new Date())+'.json';a.click()}
 function imp(f){if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.days)throw 0;localStorage.fuel=t;location.reload()}catch(e){alert('Invalid file')}})}
