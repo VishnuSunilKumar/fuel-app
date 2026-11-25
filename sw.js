@@ -1,4 +1,4 @@
-const C='fuel-v3';
+const C='fuel-v4';
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','manifest.json','icon-192.png','icon-512.png'])))});
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!=C&&k!='fuel-model').map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{const u=e.request.url;if(e.request.method!='GET'||!u.startsWith(self.location.origin))return;
